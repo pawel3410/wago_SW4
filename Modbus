@@ -1,0 +1,24 @@
+PROGRAM Modbus
+VAR
+
+	Modbus_Analizator_EN: BOOL :=TRUE;
+	Modbus_RGNN_EN:BOOL:=TRUE;
+	Modbus_MLP_EN: BOOL :=TRUE;
+
+	Modbus_Analizator_Start :BOOL:=TRUE;
+	Modbus_RGNN_Start :BOOL:=TRUE;
+	Modbus_MLP_Start :BOOL:=TRUE;
+	Reset:BOOL;
+	Ready:BOOL;
+
+	Analizatory: Analizatory;
+	RGNN1A: RGNN1A;
+	RGNN1B: RGNN1B;
+	RGNN2: RGNN2;
+	RGNN3: RGNN3;
+	RGNN4: RGNN4;
+	RGNN5: RGNN5;
+	RGNN6: RGNN6;
+	MLP:MLP;
+END_VAR
+
