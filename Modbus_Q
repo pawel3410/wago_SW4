@@ -1,0 +1,132 @@
+FUNCTION_BLOCK Modbus_Q
+VAR CONSTANT
+	TempArraySize:BYTE:=3;
+	Max_Steps: BYTE :=2;
+END_VAR
+VAR_INPUT
+	xEn: BOOL;
+	xStart : BOOL;
+	xReset:BOOL;
+	strIP:STRING;
+	bID:BYTE;
+END_VAR
+VAR_OUTPUT
+	I1:UDINT;
+	I2:UDINT;
+	I3:UDINT;
+	Open:BOOL;
+	Closed:BOOL;
+	Tripped:BOOL;
+
+	wErrorCount:WORD;
+	xDone:BOOL;
+END_VAR
+VAR
+	Odczyt : ETHERNET_MODBUSMASTER_TCP;
+	Temp : ARRAY [0..TempArraySize] OF WORD;
+	pDint:POINTER TO UDINT;
+	Actual_Step:BYTE :=0;
+	xReady : BOOL;
+	xStartNext:BOOL:=0;
+	wError : WORD;
+	b_Response_Unit_ID :  WORD;
+
+END_VAR
+VAR_IN_OUT
+
+END_VAR
+
+IF NOT xEn THEN RETURN;
+END_IF
+
+
+
+CASE Actual_Step OF
+0:
+
+	wErrorCount:=0;
+	xDone:=FALSE;
+
+	Odczyt(
+		strIP_ADDRESS:= strIP,
+		wPORT:= 502 ,
+		bUNIT_ID:= bID,
+		(*bFUNCTION_CODE:= 3,*)
+		ptREAD_DATA:= ADR(Temp),
+		xRESET:= xReset,
+		tTIME_OUT:= t#1000ms,
+		wERROR=> wError,
+		xREADY=> xReady,
+		bRESPONSE_UNIT_ID=> b_Response_Unit_ID
+	);
+
+	IF xStart AND xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	xStartNext:=TRUE;
+	END_IF;
+
+
+1:	(* I1, I2, I3 *)
+	Odczyt(
+	wREAD_ADDRESS:= 20480,
+	bFUNCTION_CODE:= 4,
+	wREAD_QUANTITY:= 3,
+	xSTART:= TRUE,
+	wERROR=> wError,
+	xREADY=> xReady,
+	);
+
+	IF xReady  AND wError = 0 THEN
+(*	I1 := UDINT_swap(ADR(Temp[0]));
+	I2 := UDINT_swap(ADR(Temp[2]));
+	I3 := UDINT_swap(ADR(Temp[4]));*)
+	I1 := Temp[0];
+	I2 := Temp[1];
+	I3 := Temp[2];
+	END_IF
+
+
+
+	IF xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	Odczyt(
+	xSTART:= FALSE,
+	);
+		IF wError >0 THEN
+		wErrorCount := wErrorCount + 1;
+		END_IF
+	END_IF
+
+2:	(* i1, i2, i3 *)
+	Odczyt(
+	wREAD_ADDRESS:= 16384,
+	bFUNCTION_CODE:= 2,
+	wREAD_QUANTITY:= 3,
+	xSTART:= TRUE,
+	wERROR=> wError,
+	xREADY=> xReady,
+	);
+
+	IF xReady  AND wError = 0 THEN
+(*	I1 := UDINT_swap(ADR(Temp[0]));
+	I2 := UDINT_swap(ADR(Temp[2]));
+	I3 := UDINT_swap(ADR(Temp[4]));*)
+	Open := Temp[0].0;
+	Closed := Temp[0].1;
+	Tripped := Temp[0].2;
+	END_IF
+
+
+
+	IF xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	Odczyt(
+	xSTART:= FALSE,
+	);
+		IF wError >0 THEN
+		wErrorCount := wErrorCount + 1;
+		END_IF
+	END_IF
+
+xDone:=TRUE;
+END_CASE
