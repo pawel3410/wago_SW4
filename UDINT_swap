@@ -1,0 +1,15 @@
+FUNCTION UDINT_swap : UDINT (*CDAB to ABCD*)
+VAR_INPUT
+	pDint:  POINTER TO UDINT;
+END_VAR
+VAR
+	udiIn: UDINT;  (*CDAB*)
+	dwTemp :DWORD;
+
+END_VAR
+
+
+udiIn := pDint^;
+dwTemp := UDINT_TO_DWORD(udiIn);
+dwTemp := ROR(dwTemp, 16);
+UDINT_swap := DWORD_TO_UDINT(dwTemp);
