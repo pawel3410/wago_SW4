@@ -1,0 +1,259 @@
+FUNCTION_BLOCK Analizatory
+VAR CONSTANT
+	Max_Steps: BYTE := AnalizatoryQuantity;
+	AnalizatoryQuantity: INT := 6;	(* !!! ilosc analizatorów minus 1*)
+END_VAR
+VAR_INPUT
+	xEN:BOOL;
+	xStart:BOOL;
+END_VAR
+VAR_OUTPUT
+	AnalizatoryData: ARRAY [0..AnalizatoryQuantity] OF Modbus_data_AS;
+END_VAR
+VAR
+	Analizatory:Modbus_Analizator;
+	AnalizatoryID: ARRAY [0..AnalizatoryQuantity] OF BYTE;
+	iI: INT;
+	xReset:BOOL;
+	bID:BYTE:=0;
+	xDone:BOOL :=0;
+	Actual_Step:BYTE :=0;
+	wError:WORD;
+	xDoneTrig : R_TRIG;
+
+	U1:UDINT;
+	U2:UDINT;
+	U3:UDINT;
+	U12:UDINT;
+	U13:UDINT;
+	U23:UDINT;
+	I1:UDINT;
+	I2:UDINT;
+	I3:UDINT;
+	IN:UDINT;
+	Pa:UDINT;
+	Pq:UDINT;
+	Eaplus:UDINT;
+	Eqplus:UDINT;
+	Eaminus:UDINT;
+	Eqminus:UDINT;
+	freq:INT;
+END_VAR
+
+IF NOT xEN THEN RETURN;
+END_IF
+
+	AnalizatoryID[0] := 2;
+	AnalizatoryID[1] := 8;
+	AnalizatoryID[2] := 3;
+	AnalizatoryID[3] := 4;
+	AnalizatoryID[4] := 5;
+	AnalizatoryID[5] := 6;
+	AnalizatoryID[6] := 7;
+
+
+	Analizatory(
+	xEn:= xEN,
+	xStart:= xStart,
+	xReset:= xReset,
+	strIP:= '10.0.0.108',
+	bID:= AnalizatoryID[Actual_Step],
+	xDone=> xDone,
+	Temp=> , 
+	pDint=> ,
+	Actual_Step=> ,
+	xReady=> ,
+	wErrorCount=> wError ,
+	b_Response_Unit_ID=>
+	);
+
+	xDoneTrig(CLK := xDone);
+	IF xDoneTrig.Q  THEN
+
+		IF wError =0 THEN
+	Analizatory(
+	U1=> AnalizatoryData[Actual_Step].Napiecie_U1,
+	U2=> AnalizatoryData[Actual_Step].Napiecie_U2,
+	U3=> AnalizatoryData[Actual_Step].Napiecie_U3,
+	U12=> AnalizatoryData[Actual_Step].Napiecie_U1_2,
+	U13=> AnalizatoryData[Actual_Step].Napiecie_U1_3,
+	U23=> AnalizatoryData[Actual_Step].Napiecie_U2_3,
+	I1=> AnalizatoryData[Actual_Step].Prad_faza_1,
+	I2=> AnalizatoryData[Actual_Step].Prad_faza_2,
+	I3=> AnalizatoryData[Actual_Step].Prad_faza_3,
+	IN=> AnalizatoryData[Actual_Step].Prad_N,
+	Pa=>AnalizatoryData[Actual_Step].moc_czynna,
+	Pq=> AnalizatoryData[Actual_Step].moc_bierna,
+	Eaplus=> AnalizatoryData[Actual_Step].energia_czynna_pobrana,
+	Eqplus=> AnalizatoryData[Actual_Step].energia_bierna_pobrana,
+	Eaminus=> AnalizatoryData[Actual_Step].energia_czynna_oddana,
+	Eqminus=> AnalizatoryData[Actual_Step].energia_bierna_oddana,
+	freq=> AnalizatoryData[Actual_Step].Czestotliwosc
+	);
+
+	AnalizatoryData[Actual_Step].Napiecie_U1 := TRUNC(AnalizatoryData[Actual_Step].Napiecie_U1 / 1000);
+	AnalizatoryData[Actual_Step].Napiecie_U2 := TRUNC(AnalizatoryData[Actual_Step].Napiecie_U2 / 1000);
+	AnalizatoryData[Actual_Step].Napiecie_U3 := TRUNC(AnalizatoryData[Actual_Step].Napiecie_U3 / 1000);
+	AnalizatoryData[Actual_Step].Napiecie_U1_2 := TRUNC(AnalizatoryData[Actual_Step].Napiecie_U1_2 / 1000);
+	AnalizatoryData[Actual_Step].Napiecie_U1_3 := TRUNC(AnalizatoryData[Actual_Step].Napiecie_U1_3 / 1000);
+	AnalizatoryData[Actual_Step].Napiecie_U2_3 := TRUNC(AnalizatoryData[Actual_Step].Napiecie_U2_3 / 1000);
+	AnalizatoryData[Actual_Step].Prad_faza_1 := TRUNC(AnalizatoryData[Actual_Step].Prad_faza_1 / 1000);
+	AnalizatoryData[Actual_Step].Prad_faza_2 := TRUNC(AnalizatoryData[Actual_Step].Prad_faza_2 / 1000);
+	AnalizatoryData[Actual_Step].Prad_faza_3 := TRUNC(AnalizatoryData[Actual_Step].Prad_faza_3 / 1000);
+	AnalizatoryData[Actual_Step].Prad_N := TRUNC(AnalizatoryData[Actual_Step].Prad_N / 1000);
+	AnalizatoryData[Actual_Step].moc_czynna := AnalizatoryData[Actual_Step].moc_czynna;
+	AnalizatoryData[Actual_Step].moc_bierna := AnalizatoryData[Actual_Step].moc_bierna;
+	AnalizatoryData[Actual_Step].energia_czynna_pobrana := AnalizatoryData[Actual_Step].energia_czynna_pobrana;
+	AnalizatoryData[Actual_Step].energia_bierna_pobrana := AnalizatoryData[Actual_Step].energia_bierna_pobrana;
+	AnalizatoryData[Actual_Step].energia_czynna_oddana := AnalizatoryData[Actual_Step].energia_czynna_oddana;
+	AnalizatoryData[Actual_Step].energia_bierna_oddana := AnalizatoryData[Actual_Step].energia_bierna_oddana;
+	AnalizatoryData[Actual_Step].Czestotliwosc := AnalizatoryData[Actual_Step].Czestotliwosc * 10;
+
+	IF Actual_Step = 0 THEN
+	SW4_RG1A_AS_Prad_faza_1 := AnalizatoryData[0].Prad_faza_1;
+	SW4_RG1A_AS_Prad_faza_2 := AnalizatoryData[0].Prad_faza_2;
+	SW4_RG1A_AS_Prad_faza_3 := AnalizatoryData[0].Prad_faza_3;
+	SW4_RG1A_AS_Prad_N := AnalizatoryData[0].Prad_N;
+	SW4_RG1A_AS_Napiecie_U1 := AnalizatoryData[0].Napiecie_U1;
+	SW4_RG1A_AS_Napiecie_U2 := AnalizatoryData[0].Napiecie_U2;
+	SW4_RG1A_AS_Napiecie_U3 := AnalizatoryData[0].Napiecie_U3;
+	SW4_RG1A_AS_Napiecie_U1_2 := AnalizatoryData[0].Napiecie_U1_2;
+	SW4_RG1A_AS_Napiecie_U1_3 := AnalizatoryData[0].Napiecie_U1_3;
+	SW4_RG1A_AS_Napiecie_U2_3 := AnalizatoryData[0].Napiecie_U2_3;
+	SW4_RG1A_AS_moc_czynna := AnalizatoryData[0].moc_czynna;
+	SW4_RG1A_AS_moc_bierna := AnalizatoryData[0].moc_bierna;
+	SW4_RG1A_AS_Czestotliwosc := AnalizatoryData[0].Czestotliwosc;
+	SW4_RG1A_AS_energia_czynna_pobrana := AnalizatoryData[0].energia_czynna_pobrana;
+	SW4_RG1A_AS_energia_czynna_oddana := AnalizatoryData[0].energia_czynna_oddana;
+	SW4_RG1A_AS_energia_bierna_pobrana := AnalizatoryData[0].energia_bierna_pobrana;
+	SW4_RG1A_AS_energia_bierna_oddana := AnalizatoryData[0].energia_bierna_oddana;
+	END_IF
+
+	IF Actual_Step = 1 THEN
+	SW4_RG1B_AS_Prad_faza_1 := AnalizatoryData[1].Prad_faza_1;
+	SW4_RG1B_AS_Prad_faza_2 := AnalizatoryData[1].Prad_faza_2;
+	SW4_RG1B_AS_Prad_faza_3 := AnalizatoryData[1].Prad_faza_3;
+	SW4_RG1B_AS_Prad_N := AnalizatoryData[1].Prad_N;
+	SW4_RG1B_AS_Napiecie_U1 := AnalizatoryData[1].Napiecie_U1;
+	SW4_RG1B_AS_Napiecie_U2 := AnalizatoryData[1].Napiecie_U2;
+	SW4_RG1B_AS_Napiecie_U3 := AnalizatoryData[1].Napiecie_U3;
+	SW4_RG1B_AS_Napiecie_U1_2 := AnalizatoryData[1].Napiecie_U1_2;
+	SW4_RG1B_AS_Napiecie_U1_3 := AnalizatoryData[1].Napiecie_U1_3;
+	SW4_RG1B_AS_Napiecie_U2_3 := AnalizatoryData[1].Napiecie_U2_3;
+	SW4_RG1B_AS_moc_czynna := AnalizatoryData[1].moc_czynna;
+	SW4_RG1B_AS_moc_bierna := AnalizatoryData[1].moc_bierna;
+	SW4_RG1B_AS_Czestotliwosc := AnalizatoryData[1].Czestotliwosc;
+	SW4_RG1B_AS_energia_czynna_pobrana := AnalizatoryData[1].energia_czynna_pobrana;
+	SW4_RG1B_AS_energia_czynna_oddana := AnalizatoryData[1].energia_czynna_oddana;
+	SW4_RG1B_AS_energia_bierna_pobrana := AnalizatoryData[1].energia_bierna_pobrana;
+	SW4_RG1B_AS_energia_bierna_oddana := AnalizatoryData[1].energia_bierna_oddana;
+	END_IF
+
+	IF Actual_Step = 2 THEN
+	SW4_RG2_AS_Prad_faza_1 := AnalizatoryData[2].Prad_faza_1;
+	SW4_RG2_AS_Prad_faza_2 := AnalizatoryData[2].Prad_faza_2;
+	SW4_RG2_AS_Prad_faza_3 := AnalizatoryData[2].Prad_faza_3;
+	SW4_RG2_AS_Prad_N := AnalizatoryData[2].Prad_N;
+	SW4_RG2_AS_Napiecie_U1 := AnalizatoryData[2].Napiecie_U1;
+	SW4_RG2_AS_Napiecie_U2 := AnalizatoryData[2].Napiecie_U2;
+	SW4_RG2_AS_Napiecie_U3 := AnalizatoryData[2].Napiecie_U3;
+	SW4_RG2_AS_Napiecie_U1_2 := AnalizatoryData[2].Napiecie_U1_2;
+	SW4_RG2_AS_Napiecie_U1_3 := AnalizatoryData[2].Napiecie_U1_3;
+	SW4_RG2_AS_Napiecie_U2_3 := AnalizatoryData[2].Napiecie_U2_3;
+	SW4_RG2_AS_moc_czynna := AnalizatoryData[2].moc_czynna;
+	SW4_RG2_AS_moc_bierna := AnalizatoryData[2].moc_bierna;
+	SW4_RG2_AS_Czestotliwosc := AnalizatoryData[2].Czestotliwosc;
+	SW4_RG2_AS_energia_czynna_pobrana := AnalizatoryData[2].energia_czynna_pobrana;
+	SW4_RG2_AS_energia_czynna_oddana := AnalizatoryData[2].energia_czynna_oddana;
+	SW4_RG2_AS_energia_bierna_pobrana := AnalizatoryData[2].energia_bierna_pobrana;
+	SW4_RG2_AS_energia_bierna_oddana := AnalizatoryData[2].energia_bierna_oddana;
+	END_IF
+
+	IF Actual_Step = 3 THEN
+	SW4_RG3_AS_Prad_faza_1 := AnalizatoryData[3].Prad_faza_1;
+	SW4_RG3_AS_Prad_faza_2 := AnalizatoryData[3].Prad_faza_2;
+	SW4_RG3_AS_Prad_faza_3 := AnalizatoryData[3].Prad_faza_3;
+	SW4_RG3_AS_Prad_N := AnalizatoryData[3].Prad_N;
+	SW4_RG3_AS_Napiecie_U1 := AnalizatoryData[3].Napiecie_U1;
+	SW4_RG3_AS_Napiecie_U2 := AnalizatoryData[3].Napiecie_U2;
+	SW4_RG3_AS_Napiecie_U3 := AnalizatoryData[3].Napiecie_U3;
+	SW4_RG3_AS_Napiecie_U1_2 := AnalizatoryData[3].Napiecie_U1_2;
+	SW4_RG3_AS_Napiecie_U1_3 := AnalizatoryData[3].Napiecie_U1_3;
+	SW4_RG3_AS_Napiecie_U2_3 := AnalizatoryData[3].Napiecie_U2_3;
+	SW4_RG3_AS_moc_czynna := AnalizatoryData[3].moc_czynna;
+	SW4_RG3_AS_moc_bierna := AnalizatoryData[3].moc_bierna;
+	SW4_RG3_AS_Czestotliwosc := AnalizatoryData[3].Czestotliwosc;
+	SW4_RG3_AS_energia_czynna_pobrana := AnalizatoryData[3].energia_czynna_pobrana;
+	SW4_RG3_AS_energia_czynna_oddana := AnalizatoryData[3].energia_czynna_oddana;
+	SW4_RG3_AS_energia_bierna_pobrana := AnalizatoryData[3].energia_bierna_pobrana;
+	SW4_RG3_AS_energia_bierna_oddana := AnalizatoryData[3].energia_bierna_oddana;
+	END_IF
+
+	IF Actual_Step = 4 THEN
+	SW4_RG4_AS_Prad_faza_1 := AnalizatoryData[4].Prad_faza_1;
+	SW4_RG4_AS_Prad_faza_2 := AnalizatoryData[4].Prad_faza_2;
+	SW4_RG4_AS_Prad_faza_3 := AnalizatoryData[4].Prad_faza_3;
+	SW4_RG4_AS_Prad_N := AnalizatoryData[4].Prad_N;
+	SW4_RG4_AS_Napiecie_U1 := AnalizatoryData[4].Napiecie_U1;
+	SW4_RG4_AS_Napiecie_U2 := AnalizatoryData[4].Napiecie_U2;
+	SW4_RG4_AS_Napiecie_U3 := AnalizatoryData[4].Napiecie_U3;
+	SW4_RG4_AS_Napiecie_U1_2 := AnalizatoryData[4].Napiecie_U1_2;
+	SW4_RG4_AS_Napiecie_U1_3 := AnalizatoryData[4].Napiecie_U1_3;
+	SW4_RG4_AS_Napiecie_U2_3 := AnalizatoryData[4].Napiecie_U2_3;
+	SW4_RG4_AS_moc_czynna := AnalizatoryData[4].moc_czynna;
+	SW4_RG4_AS_moc_bierna := AnalizatoryData[4].moc_bierna;
+	SW4_RG4_AS_Czestotliwosc := AnalizatoryData[4].Czestotliwosc;
+	SW4_RG4_AS_energia_czynna_pobrana := AnalizatoryData[4].energia_czynna_pobrana;
+	SW4_RG4_AS_energia_czynna_oddana := AnalizatoryData[4].energia_czynna_oddana;
+	SW4_RG4_AS_energia_bierna_pobrana := AnalizatoryData[4].energia_bierna_pobrana;
+	SW4_RG4_AS_energia_bierna_oddana := AnalizatoryData[4].energia_bierna_oddana;
+	END_IF
+
+	IF Actual_Step = 5 THEN
+	SW4_RG5_AS_Prad_faza_1 := AnalizatoryData[5].Prad_faza_1;
+	SW4_RG5_AS_Prad_faza_2 := AnalizatoryData[5].Prad_faza_2;
+	SW4_RG5_AS_Prad_faza_3 := AnalizatoryData[5].Prad_faza_3;
+	SW4_RG5_AS_Prad_N := AnalizatoryData[5].Prad_N;
+	SW4_RG5_AS_Napiecie_U1 := AnalizatoryData[5].Napiecie_U1;
+	SW4_RG5_AS_Napiecie_U2 := AnalizatoryData[5].Napiecie_U2;
+	SW4_RG5_AS_Napiecie_U3 := AnalizatoryData[5].Napiecie_U3;
+	SW4_RG5_AS_Napiecie_U1_2 := AnalizatoryData[5].Napiecie_U1_2;
+	SW4_RG5_AS_Napiecie_U1_3 := AnalizatoryData[5].Napiecie_U1_3;
+	SW4_RG5_AS_Napiecie_U2_3 := AnalizatoryData[5].Napiecie_U2_3;
+	SW4_RG5_AS_moc_czynna := AnalizatoryData[5].moc_czynna;
+	SW4_RG5_AS_moc_bierna := AnalizatoryData[5].moc_bierna;
+	SW4_RG5_AS_Czestotliwosc := AnalizatoryData[5].Czestotliwosc;
+	SW4_RG5_AS_energia_czynna_pobrana := AnalizatoryData[5].energia_czynna_pobrana;
+	SW4_RG5_AS_energia_czynna_oddana := AnalizatoryData[5].energia_czynna_oddana;
+	SW4_RG5_AS_energia_bierna_pobrana := AnalizatoryData[5].energia_bierna_pobrana;
+	SW4_RG5_AS_energia_bierna_oddana := AnalizatoryData[5].energia_bierna_oddana;
+	END_IF
+
+	IF Actual_Step = 6 THEN
+	SW4_RG6_AS_Prad_faza_1 := AnalizatoryData[6].Prad_faza_1;
+	SW4_RG6_AS_Prad_faza_2 := AnalizatoryData[6].Prad_faza_2;
+	SW4_RG6_AS_Prad_faza_3 := AnalizatoryData[6].Prad_faza_3;
+	SW4_RG6_AS_Prad_N := AnalizatoryData[6].Prad_N;
+	SW4_RG6_AS_Napiecie_U1 := AnalizatoryData[6].Napiecie_U1;
+	SW4_RG6_AS_Napiecie_U2 := AnalizatoryData[6].Napiecie_U2;
+	SW4_RG6_AS_Napiecie_U3 := AnalizatoryData[6].Napiecie_U3;
+	SW4_RG6_AS_Napiecie_U1_2 := AnalizatoryData[6].Napiecie_U1_2;
+	SW4_RG6_AS_Napiecie_U1_3 := AnalizatoryData[6].Napiecie_U1_3;
+	SW4_RG6_AS_Napiecie_U2_3 := AnalizatoryData[6].Napiecie_U2_3;
+	SW4_RG6_AS_moc_czynna := AnalizatoryData[6].moc_czynna;
+	SW4_RG6_AS_moc_bierna := AnalizatoryData[6].moc_bierna;
+	SW4_RG6_AS_Czestotliwosc := AnalizatoryData[6].Czestotliwosc;
+	SW4_RG6_AS_energia_czynna_pobrana := AnalizatoryData[6].energia_czynna_pobrana;
+	SW4_RG6_AS_energia_czynna_oddana := AnalizatoryData[6].energia_czynna_oddana;
+	SW4_RG6_AS_energia_bierna_pobrana := AnalizatoryData[6].energia_bierna_pobrana;
+	SW4_RG6_AS_energia_bierna_oddana := AnalizatoryData[6].energia_bierna_oddana;
+	END_IF
+
+		END_IF
+	Actual_Step := Actual_Step +1;
+	END_IF
+
+
+	IF Actual_Step > Max_Steps THEN
+	Actual_Step :=0;
+	END_IF
