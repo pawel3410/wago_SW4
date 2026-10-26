@@ -1,0 +1,12 @@
+FUNCTION Next_step : BYTE
+VAR_INPUT
+	bStepActual : BYTE;
+	bStepMax: BYTE;
+
+END_VAR
+VAR
+END_VAR
+
+IF bStepActual < bStepMax THEN Next_step := bStepActual +1;
+	ELSE Next_step := 0;
+END_IF
