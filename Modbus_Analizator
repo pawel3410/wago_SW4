@@ -1,0 +1,249 @@
+FUNCTION_BLOCK Modbus_Analizator
+VAR CONSTANT
+	TempArraySize:BYTE:=10;
+	Max_Steps: BYTE :=6;
+END_VAR
+VAR_INPUT
+	xEn: BOOL;
+	xStart : BOOL;
+	xReset:BOOL;
+	strIP:STRING;
+	bID:BYTE;
+END_VAR
+VAR_OUTPUT
+	U1:UDINT;
+	U2:UDINT;
+	U3:UDINT;
+	U12:UDINT;
+	U13:UDINT;
+	U23:UDINT;
+	I1:UDINT;
+	I2:UDINT;
+	I3:UDINT;
+	IN:UDINT;
+	Pa:UDINT;
+	Pq:UDINT;
+	Eaplus:UDINT;
+	Eqplus:UDINT;
+	Eaminus:UDINT;
+	Eqminus:UDINT;
+	freq:INT;
+
+	wErrorCount:WORD;
+	xDone:BOOL;
+END_VAR
+VAR
+	Odczyt : ETHERNET_MODBUSMASTER_TCP;
+	Temp : ARRAY [0..TempArraySize] OF WORD;
+	pDint:POINTER TO UDINT;
+	Actual_Step:BYTE :=0;
+	xReady : BOOL;
+	xStartNext:BOOL:=0;
+	wError : WORD;
+	b_Response_Unit_ID :  WORD;
+
+END_VAR
+VAR_IN_OUT
+
+END_VAR
+
+IF NOT xEn THEN RETURN;
+END_IF
+
+
+
+CASE Actual_Step OF
+0:
+(*	U1:=0;
+	U2:=0;
+	U3:=0;
+	U12:=0;
+	U13:=0;
+	U23:=0;
+	I1:=0;
+	I2:=0;
+	I3:=0;
+	Pa:=0;
+	Pq:=0;
+	Eaplus:=0;
+	Eqplus:=0;
+	Eaminus:=0;
+	Eqminus:=0;
+	freq:=0;
+*)
+	wErrorCount:=0;
+	xDone:=FALSE;
+
+	Odczyt(
+		(*strIP_ADDRESS:= '10.0.0.108',*)
+		strIP_ADDRESS:= strIP,
+		wPORT:= 502 ,
+		bUNIT_ID:= bID,
+		bFUNCTION_CODE:= 3,
+		ptREAD_DATA:= ADR(Temp),
+		xRESET:= xReset,
+		tTIME_OUT:= t#1000ms,
+		wERROR=> wError,
+		xREADY=> xReady,
+		bRESPONSE_UNIT_ID=> b_Response_Unit_ID
+	);
+
+	IF xStart AND xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	xStartNext:=TRUE;
+	END_IF;
+
+
+1:	(* U1, U2, U3 *)
+	Odczyt(
+	wREAD_ADDRESS:= 4096,
+	wREAD_QUANTITY:= 6,
+	xSTART:= TRUE,
+	wERROR=> wError,
+	xREADY=> xReady,
+	);
+
+	IF xReady  AND wError = 0 THEN
+	U1 := UDINT_swap(ADR(Temp[0]));
+	U2 := UDINT_swap(ADR(Temp[2]));
+	U3 := UDINT_swap(ADR(Temp[4]));
+	END_IF
+
+
+
+	IF xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	Odczyt(
+	xSTART:= FALSE,
+	);
+		IF wError >0 THEN
+		wErrorCount := wErrorCount + 1;
+		END_IF
+	END_IF
+
+2:	(*U12, U13, U23 *)
+	Odczyt(
+	wREAD_ADDRESS:= 4110,
+	wREAD_QUANTITY:= 6,
+	xSTART:= TRUE,
+	wERROR=> wError,
+	xREADY=> xReady,
+	);
+
+	IF xReady  AND wError = 0 THEN
+	U12 := UDINT_swap(ADR(Temp[0]));
+	U13 := UDINT_swap(ADR(Temp[2]));
+	U23 := UDINT_swap(ADR(Temp[4]));
+	END_IF
+
+	IF xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	Odczyt(
+	xSTART:= FALSE,
+	);
+		IF wError >0 THEN
+		wErrorCount := wErrorCount + 1;
+		END_IF
+	END_IF
+
+3:	(* I1, I2, I3 *)
+	Odczyt(
+	wREAD_ADDRESS:= 4102,
+	wREAD_QUANTITY:= 8,
+	xSTART:= TRUE,
+	wERROR=> wError,
+	xREADY=> xReady,
+	);
+
+	IF xReady  AND wError = 0 THEN
+	I1 := UDINT_swap(ADR(Temp[0]));
+	I2 := UDINT_swap(ADR(Temp[2]));
+	I3 := UDINT_swap(ADR(Temp[4]));
+	IN := UDINT_swap(ADR(Temp[6]));
+	END_IF
+
+	IF xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	Odczyt(
+	xSTART:= FALSE,
+	);
+		IF wError >0 THEN
+		wErrorCount := wErrorCount + 1;
+		END_IF
+	END_IF
+
+4:	(* Pa, Pq *)
+	Odczyt(
+	wREAD_ADDRESS:= 4116,
+	wREAD_QUANTITY:= 4,
+	xSTART:= TRUE,
+	wERROR=> wError,
+	xREADY=> xReady,
+	);
+
+	IF xReady  AND wError = 0 THEN
+	Pa := UDINT_swap(ADR(Temp[0]));
+	Pq := UDINT_swap(ADR(Temp[2]));
+	END_IF
+
+	IF xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	Odczyt(
+	xSTART:= FALSE,
+	);
+		IF wError >0 THEN
+		wErrorCount := wErrorCount + 1;
+		END_IF
+	END_IF
+
+5:	(* Ea, Eq *)
+	Odczyt(
+	wREAD_ADDRESS:= 4124,
+	wREAD_QUANTITY:= 8,
+	xSTART:= TRUE,
+	wERROR=> wError,
+	xREADY=> xReady,
+	);
+
+	IF xReady  AND wError = 0 THEN
+	Eaplus := UDINT_swap(ADR(Temp[0]));
+	Eqplus := UDINT_swap(ADR(Temp[2]));
+	Eaminus := UDINT_swap(ADR(Temp[4]));
+	Eqminus := UDINT_swap(ADR(Temp[6]));
+	END_IF
+
+	IF xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	Odczyt(
+	xSTART:= FALSE,
+	);
+		IF wError >0 THEN
+		wErrorCount := wErrorCount + 1;
+		END_IF
+	END_IF
+
+6:	(* frequency *)
+	Odczyt(
+	wREAD_ADDRESS:= 4134,
+	wREAD_QUANTITY:= 1,
+	xSTART:= TRUE,
+	wERROR=> wError,
+	xREADY=> xReady,
+	);
+
+	IF xReady  AND wError = 0 THEN
+	freq:= Temp[0];
+	END_IF
+
+	IF xReady THEN
+	Actual_Step := Next_step(Actual_Step, Max_Steps);
+	Odczyt(
+	xSTART:= FALSE,
+	);
+		IF wError >0 THEN
+		wErrorCount := wErrorCount + 1;
+		END_IF
+	END_IF
+
+xDone:=TRUE;
+END_CASE
