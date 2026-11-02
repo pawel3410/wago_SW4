@@ -67,17 +67,7 @@ END_IF
 	Actual_Step=> ,
 	xReady=> ,
 	wErrorCount=> wError ,
-	b_Response_Unit_ID=>
-	);
-
-	xDoneTrig(CLK := xDone);
-	IF xDoneTrig.Q  THEN
-		IF wError =1 THEN
-			ReadFaults[Actual_Step]:= ReadFaults[Actual_Step] +1;
-			END_IF
-
-		IF wError =0 THEN
-	Analizatory(
+	b_Response_Unit_ID=> ,
 	U1=> AnalizatoryData[Actual_Step].Napiecie_U1,
 	U2=> AnalizatoryData[Actual_Step].Napiecie_U2,
 	U3=> AnalizatoryData[Actual_Step].Napiecie_U3,
@@ -96,6 +86,14 @@ END_IF
 	Eqminus=> AnalizatoryData[Actual_Step].energia_bierna_oddana,
 	freq=> AnalizatoryData[Actual_Step].Czestotliwosc
 	);
+
+	xDoneTrig(CLK := xDone);
+	IF xDoneTrig.Q  THEN
+		IF wError =1 THEN
+			ReadFaults[Actual_Step]:= ReadFaults[Actual_Step] +1;
+			END_IF
+
+		IF wError =0 THEN
 
 	AnalizatoryData[Actual_Step].Napiecie_U1 := TRUNC(AnalizatoryData[Actual_Step].Napiecie_U1 / 1000);
 	AnalizatoryData[Actual_Step].Napiecie_U2 := TRUNC(AnalizatoryData[Actual_Step].Napiecie_U2 / 1000);
