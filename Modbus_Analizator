@@ -90,6 +90,7 @@ CASE Actual_Step OF
 *)
 	wErrorCount:=0;
 	xDone:=FALSE;
+	xReset:=False;
 
 
 
