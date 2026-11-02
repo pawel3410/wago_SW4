@@ -1,7 +1,7 @@
 FUNCTION_BLOCK Modbus_Analizator
 VAR CONSTANT
 	TempArraySize:BYTE:=10;
-	Max_Steps: BYTE :=6;
+	Max_Steps: BYTE :=7;
 END_VAR
 VAR_INPUT
 	xEn: BOOL;
@@ -38,19 +38,36 @@ VAR
 	pDint:POINTER TO UDINT;
 	Actual_Step:BYTE :=0;
 	xReady : BOOL;
+	xReadyTrig : R_TRIG;
 	xStartNext:BOOL:=0;
 	wError : WORD;
 	b_Response_Unit_ID :  WORD;
-
+	bFUNCTION_CODE: BYTE;
+	wREAD_ADDRESS: WORD;
+	wREAD_QUANTITY: WORD;
+	timeout : TON;
+	timeoutEnd:BOOL;
 END_VAR
 VAR_IN_OUT
 
 END_VAR
 
-IF NOT xEn THEN RETURN;
+(*###########################*)
+
+IF NOT xEn THEN
+	Odczyt(
+		xReset:= TRUE,
+	);
+RETURN;
 END_IF
 
-
+xReadyTrig(CLK := xReady);
+timeout.PT:= T#2s;
+IF timeout.Q THEN
+	Actual_Step:= Max_Steps;
+	wErrorCount := wErrorCount + 1;
+	timeout.IN:=FALSE;
+	END_IF
 
 CASE Actual_Step OF
 0:
@@ -74,19 +91,7 @@ CASE Actual_Step OF
 	wErrorCount:=0;
 	xDone:=FALSE;
 
-	Odczyt(
-		(*strIP_ADDRESS:= '10.0.0.108',*)
-		strIP_ADDRESS:= strIP,
-		wPORT:= 502 ,
-		bUNIT_ID:= bID,
-		bFUNCTION_CODE:= 3,
-		ptREAD_DATA:= ADR(Temp),
-		xRESET:= xReset,
-		tTIME_OUT:= t#1000ms,
-		wERROR=> wError,
-		xREADY=> xReady,
-		bRESPONSE_UNIT_ID=> b_Response_Unit_ID
-	);
+
 
 	IF xStart AND xReady THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
@@ -95,15 +100,14 @@ CASE Actual_Step OF
 
 
 1:	(* U1, U2, U3 *)
-	Odczyt(
-	wREAD_ADDRESS:= 4096,
-	wREAD_QUANTITY:= 6,
-	xSTART:= TRUE,
-	wERROR=> wError,
-	xREADY=> xReady,
-	);
 
-	IF xReady  AND wError = 0 THEN
+	bFUNCTION_CODE := 3;
+	wREAD_ADDRESS:= 4096;
+	wREAD_QUANTITY:= 6;
+	xStart:= TRUE;
+	timeout.IN:= TRUE;
+
+	IF xReadyTrig.Q  AND wError = 0 THEN
 	U1 := UDINT_swap(ADR(Temp[0]));
 	U2 := UDINT_swap(ADR(Temp[2]));
 	U3 := UDINT_swap(ADR(Temp[4]));
@@ -111,139 +115,175 @@ CASE Actual_Step OF
 
 
 
-	IF xReady THEN
+	IF xReadyTrig.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	Odczyt(
-	xSTART:= FALSE,
-	);
+	xStart:= FALSE;
+	xReady:= FALSE;
+	timeout.IN:=FALSE;
+
+
 		IF wError >0 THEN
 		wErrorCount := wErrorCount + 1;
+		Actual_Step:= Max_Steps;
 		END_IF
 	END_IF
 
 2:	(*U12, U13, U23 *)
-	Odczyt(
-	wREAD_ADDRESS:= 4110,
-	wREAD_QUANTITY:= 6,
-	xSTART:= TRUE,
-	wERROR=> wError,
-	xREADY=> xReady,
-	);
 
-	IF xReady  AND wError = 0 THEN
+	bFUNCTION_CODE := 3;
+	wREAD_ADDRESS:= 4110;
+	wREAD_QUANTITY:= 6;
+	xStart:= TRUE;
+	timeout.IN:= TRUE;
+
+
+	IF xReadyTrig.Q  AND wError = 0 THEN
 	U12 := UDINT_swap(ADR(Temp[0]));
 	U13 := UDINT_swap(ADR(Temp[2]));
 	U23 := UDINT_swap(ADR(Temp[4]));
 	END_IF
 
-	IF xReady THEN
+	IF xReadyTrig.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	Odczyt(
-	xSTART:= FALSE,
-	);
+	xStart:= FALSE;
+	xReady:= FALSE;
+	timeout.IN:=FALSE;
+
+
 		IF wError >0 THEN
 		wErrorCount := wErrorCount + 1;
+		Actual_Step:= Max_Steps;
 		END_IF
 	END_IF
 
 3:	(* I1, I2, I3 *)
-	Odczyt(
-	wREAD_ADDRESS:= 4102,
-	wREAD_QUANTITY:= 8,
-	xSTART:= TRUE,
-	wERROR=> wError,
-	xREADY=> xReady,
-	);
 
-	IF xReady  AND wError = 0 THEN
+	bFUNCTION_CODE := 3;
+	wREAD_ADDRESS:= 4102;
+	wREAD_QUANTITY:= 8;
+	xStart:= TRUE;
+	timeout.IN:= TRUE;
+
+
+	IF xReadyTrig.Q  AND wError = 0 THEN
 	I1 := UDINT_swap(ADR(Temp[0]));
 	I2 := UDINT_swap(ADR(Temp[2]));
 	I3 := UDINT_swap(ADR(Temp[4]));
 	IN := UDINT_swap(ADR(Temp[6]));
 	END_IF
 
-	IF xReady THEN
+	IF xReadyTrig.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	Odczyt(
-	xSTART:= FALSE,
-	);
+	xStart:= FALSE;
+	xReady:= FALSE;
+	timeout.IN:=FALSE;
+
 		IF wError >0 THEN
 		wErrorCount := wErrorCount + 1;
+		Actual_Step:= Max_Steps;
 		END_IF
 	END_IF
 
 4:	(* Pa, Pq *)
-	Odczyt(
-	wREAD_ADDRESS:= 4116,
-	wREAD_QUANTITY:= 4,
-	xSTART:= TRUE,
-	wERROR=> wError,
-	xREADY=> xReady,
-	);
 
-	IF xReady  AND wError = 0 THEN
+	bFUNCTION_CODE := 3;
+	wREAD_ADDRESS:= 4116;
+	wREAD_QUANTITY:= 4;
+	xStart:= TRUE;
+	timeout.IN:= TRUE;
+
+
+	IF xReadyTrig.Q  AND wError = 0 THEN
 	Pa := UDINT_swap(ADR(Temp[0]));
 	Pq := UDINT_swap(ADR(Temp[2]));
 	END_IF
 
-	IF xReady THEN
+	IF xReadyTrig.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	Odczyt(
-	xSTART:= FALSE,
-	);
+	xStart:= FALSE;
+	xReady:= FALSE;
+	timeout.IN:=FALSE;
+
 		IF wError >0 THEN
 		wErrorCount := wErrorCount + 1;
+		Actual_Step:= Max_Steps;
 		END_IF
 	END_IF
 
 5:	(* Ea, Eq *)
-	Odczyt(
-	wREAD_ADDRESS:= 4124,
-	wREAD_QUANTITY:= 8,
-	xSTART:= TRUE,
-	wERROR=> wError,
-	xREADY=> xReady,
-	);
 
-	IF xReady  AND wError = 0 THEN
+	bFUNCTION_CODE := 3;
+	wREAD_ADDRESS:= 4124;
+	wREAD_QUANTITY:= 8;
+	xStart:= TRUE;
+	timeout.IN:= TRUE;
+
+
+	IF xReadyTrig.Q  AND wError = 0 THEN
 	Eaplus := UDINT_swap(ADR(Temp[0]));
 	Eqplus := UDINT_swap(ADR(Temp[2]));
 	Eaminus := UDINT_swap(ADR(Temp[4]));
 	Eqminus := UDINT_swap(ADR(Temp[6]));
 	END_IF
 
-	IF xReady THEN
+	IF xReadyTrig.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	Odczyt(
-	xSTART:= FALSE,
-	);
+	xStart:= FALSE;
+	xReady:= FALSE;
+	timeout.IN:=FALSE;
+
 		IF wError >0 THEN
 		wErrorCount := wErrorCount + 1;
+		Actual_Step:= Max_Steps;
 		END_IF
 	END_IF
 
 6:	(* frequency *)
-	Odczyt(
-	wREAD_ADDRESS:= 4134,
-	wREAD_QUANTITY:= 1,
-	xSTART:= TRUE,
-	wERROR=> wError,
-	xREADY=> xReady,
-	);
 
-	IF xReady  AND wError = 0 THEN
+	bFUNCTION_CODE := 3;
+	wREAD_ADDRESS:= 4134;
+	wREAD_QUANTITY:= 1;
+	xStart:= TRUE;
+	timeout.IN:= TRUE;
+
+
+	IF xReadyTrig.Q  AND wError = 0 THEN
 	freq:= Temp[0];
 	END_IF
 
-	IF xReady THEN
+	IF xReadyTrig.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	Odczyt(
-	xSTART:= FALSE,
-	);
+	xStart:= FALSE;
+	xReady:= FALSE;
+	timeout.IN:=FALSE;
+
 		IF wError >0 THEN
 		wErrorCount := wErrorCount + 1;
+		Actual_Step:= Max_Steps;
 		END_IF
 	END_IF
 
-xDone:=TRUE;
+7:
+	xStart:= FALSE;
+	xReset:=TRUE;
+	xDone:=TRUE;
+	Actual_Step:= 0;
+
 END_CASE
+
+	Odczyt(
+		(*strIP_ADDRESS:= '10.0.0.108',*)
+		xStart := xStart,
+		strIP_ADDRESS:= strIP,
+		wPORT:= 502 ,
+		bUNIT_ID:= bID,
+		bFUNCTION_CODE:= bFUNCTION_CODE,
+		wREAD_ADDRESS:= wREAD_ADDRESS,
+		wREAD_QUANTITY:= wREAD_QUANTITY,
+		ptREAD_DATA:= ADR(Temp),
+		xRESET:= xReset,
+		tTIME_OUT:= t#1000ms,
+		wERROR=> wError,
+		xREADY=> xReady,
+		bRESPONSE_UNIT_ID=> b_Response_Unit_ID
+	);
