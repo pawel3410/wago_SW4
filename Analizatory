@@ -13,6 +13,7 @@ END_VAR
 VAR
 	Analizatory:Modbus_Analizator;
 	AnalizatoryID: ARRAY [0..AnalizatoryQuantity] OF BYTE;
+	ReadFaults: ARRAY [0..AnalizatoryQuantity] OF WORD;
 	iI: INT;
 	xReset:BOOL;
 	bID:BYTE:=0;
@@ -39,6 +40,8 @@ VAR
 	Eqminus:UDINT;
 	freq:INT;
 END_VAR
+
+(*#####################################*)
 
 IF NOT xEN THEN RETURN;
 END_IF
@@ -69,6 +72,9 @@ END_IF
 
 	xDoneTrig(CLK := xDone);
 	IF xDoneTrig.Q  THEN
+		IF wError =1 THEN
+			ReadFaults[Actual_Step]:= ReadFaults[Actual_Step] +1;
+			END_IF
 
 		IF wError =0 THEN
 	Analizatory(
