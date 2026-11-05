@@ -1,0 +1,18 @@
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '\/Modbus' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+FUNCTION Next_step : BYTE
+VAR_INPUT
+	bStepActual : BYTE;
+	bStepMax: BYTE;
+
+END_VAR
+VAR
+END_VAR
+(* @END_DECLARATION := '0' *)
+IF bStepActual < bStepMax THEN Next_step := bStepActual +1;
+	ELSE Next_step := 0;
+END_IF
+END_FUNCTION
