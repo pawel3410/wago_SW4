@@ -1,0 +1,22 @@
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '\/Modbus' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+FUNCTION UDINT_swap : UDINT (*CDAB to ABCD*)
+VAR_INPUT
+	pDint:  POINTER TO UDINT;
+END_VAR
+VAR
+	udiIn: UDINT;  (*CDAB*)
+	dwTemp :DWORD;
+
+END_VAR
+
+(* @END_DECLARATION := '0' *)
+udiIn := pDint^;
+dwTemp := UDINT_TO_DWORD(udiIn);
+dwTemp := ROR(dwTemp, 16);
+UDINT_swap := DWORD_TO_UDINT(dwTemp);
+
+END_FUNCTION
