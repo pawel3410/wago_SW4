@@ -1,0 +1,2 @@
+- biblioteka ModbusEthernet_04.lib
+-na apojedynczym adresie IP jest modbus gateway modbus TCP to modbus RTU, wiec plc de fakto komunikuje się z urzadzeniami slave modbus RTU
