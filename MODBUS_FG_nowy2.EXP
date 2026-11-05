@@ -202,7 +202,7 @@ CASE Actual_Step OF
 		xReady:= FALSE;
 		timeout.IN:=FALSE;
 		Actual_Step := Next_step(Actual_Step, Max_Steps);
-			IF wError >0 OR bID<>b_Response_Unit_ID THEN
+			IF wError >0 OR bID<>b_Response_Unit_ID OR Temp[0]=32768 THEN
 				wErrorCount := wErrorCount + 1;
 				Actual_Step:= Max_Steps;
 			END_IF
@@ -211,6 +211,10 @@ CASE Actual_Step OF
 				Eaminus := UDINT_swap(ADR(Temp[2]));
 				Eqplus := UDINT_swap(ADR(Temp[6]));
 				Eqminus := UDINT_swap(ADR(Temp[8]));
+				IF Eaplus=2147483648 THEN	(*blad wewnetrzny  licznika*)
+					wErrorCount := wErrorCount + 1;
+					Actual_Step:= Max_Steps;
+				END_IF
 			END_IF
 	END_IF
 
