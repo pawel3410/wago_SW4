@@ -1,0 +1,14 @@
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+TYPE Modbus_data_Q :
+STRUCT
+	Prad_faza_1: REAL;   (*Prad fazowy [A]*)
+	Prad_faza_2: REAL;   (*Prad fazowy [A]*)
+	Prad_faza_3: REAL;   (*Prad fazowy [A]*)
+	Open:BOOL;
+	Closed:BOOL;
+	Tripped:BOOL;
+END_STRUCT
+END_TYPE
+(* @END_DECLARATION := '0' *)
