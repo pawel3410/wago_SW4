@@ -1,0 +1,499 @@
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '\/Modbus' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+FUNCTION_BLOCK RGNN3
+VAR CONSTANT
+	Max_Steps: BYTE := ModulyQuantity;
+	ModulyQuantity: INT := 16;	(* !!! ilosc modulow minus 1*)
+END_VAR
+VAR_INPUT
+	xEN:BOOL;
+	xStart:BOOL;
+END_VAR
+VAR_OUTPUT
+	ModulyDataQ: ARRAY [0..2] OF Modbus_data_Q;
+	ModulyDataFG: ARRAY  [3..16] OF Modbus_data_FG;
+END_VAR
+VAR
+	ModulQ:Modbus_Q;
+	ModulFG:Modbus_FG;
+	strIP:STRING:='10.0.0.104';
+	ModulType :BYTE:=1;	(*0- Analizator, 1-Q, 2-FG*)
+	ModulyID: ARRAY [0..ModulyQuantity] OF BYTE;
+	ReadFaults: ARRAY [0..ModulyQuantity] OF WORD;
+	iI: INT;
+	xReset:BOOL;
+	bID:BYTE:=0;
+	xDone:BOOL :=0;
+	Actual_Step:BYTE :=0;
+	wError:WORD;
+	b_Response_Unit_ID:BYTE;
+	xDoneTrig : R_TRIG;
+
+	U1:UDINT;
+	U2:UDINT;
+	U3:UDINT;
+	U12:UDINT;
+	U13:UDINT;
+	U23:UDINT;
+	I1:UDINT;
+	I2:UDINT;
+	I3:UDINT;
+	Pa:UDINT;
+	Pq:UDINT;
+	Eaplus:UDINT;
+	Eqplus:UDINT;
+	Eaminus:UDINT;
+	Eqminus:UDINT;
+	freq:INT;
+	Open:BOOL;
+	Closed:BOOL;
+	Tripped:BOOL;
+END_VAR
+(* @END_DECLARATION := '0' *)
+IF NOT xEN THEN RETURN;
+END_IF
+
+	ModulyID[0] := 15;	(*RG_QGR*)
+	ModulyID[1] := 17;	(*RG_QBK*)
+	ModulyID[2] := 16;	(*RG_S*)
+	ModulyID[3] := 6;	(*RG_FZ3*)
+	ModulyID[4] := 1;	(*RG_FZ4*)
+	ModulyID[5] := 81;	(*RG_FG1*)
+	ModulyID[6] := 4;	(*RG_FG2*)
+	ModulyID[7] := 220;	(*RG_FG3*)
+	ModulyID[8] := 2;	(*RG_FG4*)
+	ModulyID[9] := 91;	(*RG_FG5*)
+	ModulyID[10] := 12;	(*RG_FG6*)
+	ModulyID[11] := 52;	(*RG_FG7*)
+	ModulyID[12] := 32;	(*RG_FG8*)
+	ModulyID[13] := 62;	(*RG_FG9*)
+	ModulyID[14] := 8;	(*RG_FG10*)
+	ModulyID[15] := 7;	(*RG_FG11*)
+	ModulyID[16] := 9;	(*RG_FG12*)
+
+
+
+IF ModulType = 1 THEN
+
+	ModulQ(
+	xEn:= xEN,
+	xStart:= xStart,
+	xReset:= xReset,
+	strIP:= strIP,
+	bID:= ModulyID[Actual_Step],
+	xDone=> xDone,
+	Temp=> , 
+	pDint=> ,
+	Actual_Step=> ,
+	xReady=> ,
+	wErrorCount=> wError ,
+	b_Response_Unit_ID=>b_Response_Unit_ID ,
+	I1=> ModulyDataQ[Actual_Step].Prad_faza_1,
+	I2=> ModulyDataQ[Actual_Step].Prad_faza_2,
+	I3=> ModulyDataQ[Actual_Step].Prad_faza_3,
+	Open=> ModulyDataQ[Actual_Step].Open,
+	Closed=> ModulyDataQ[Actual_Step].Closed,
+	Tripped=> ModulyDataQ[Actual_Step].Tripped
+	);
+
+	xDoneTrig(CLK := xDone);
+	IF xDoneTrig.Q  THEN
+		IF wError =1 THEN
+			ReadFaults[Actual_Step]:= ReadFaults[Actual_Step] +1;
+			END_IF
+
+		IF  wError =0 AND b_Response_Unit_ID=ModulyID[Actual_Step]  THEN
+
+	ModulyDataQ[Actual_Step].Prad_faza_1 := ModulyDataQ[Actual_Step].Prad_faza_1;
+	ModulyDataQ[Actual_Step].Prad_faza_2 := ModulyDataQ[Actual_Step].Prad_faza_2;
+	ModulyDataQ[Actual_Step].Prad_faza_3 := ModulyDataQ[Actual_Step].Prad_faza_3;
+	ModulyDataQ[Actual_Step].Open := ModulyDataQ[Actual_Step].Open;
+	ModulyDataQ[Actual_Step].Closed := ModulyDataQ[Actual_Step].Closed;
+	ModulyDataQ[Actual_Step].Tripped := ModulyDataQ[Actual_Step].Tripped;
+
+	IF Actual_Step = 0 THEN
+	SW4_RG3_QGR3_Prad_faza_1 := ModulyDataQ[0].Prad_faza_1;
+	SW4_RG3_QGR3_Prad_faza_2 := ModulyDataQ[0].Prad_faza_2;
+	SW4_RG3_QGR3_Prad_faza_3 := ModulyDataQ[0].Prad_faza_3;
+	SW4_RG3_QGR3_Open := ModulyDataQ[0].Open;
+	SW4_RG3_QGR3_Closed := ModulyDataQ[0].Closed;
+	SW4_RG3_QGR3_Tripped := ModulyDataQ[0].Tripped;
+	END_IF
+
+	IF Actual_Step = 1 THEN
+	SW4_RG3_QBK3_Prad_faza_1 := ModulyDataQ[1].Prad_faza_1;
+	SW4_RG3_QBK3_Prad_faza_2 := ModulyDataQ[1].Prad_faza_2;
+	SW4_RG3_QBK3_Prad_faza_3 := ModulyDataQ[1].Prad_faza_3;
+	SW4_RG3_QBK3_Open := ModulyDataQ[1].Open;
+	SW4_RG3_QBK3_Closed := ModulyDataQ[1].Closed;
+	SW4_RG3_QBK3_Tripped := ModulyDataQ[1].Tripped;
+	END_IF
+
+	IF Actual_Step = 2 THEN
+	SW4_RG3_QS3_Prad_faza_1 := ModulyDataQ[2].Prad_faza_1;
+	SW4_RG3_QS3_Prad_faza_2 := ModulyDataQ[2].Prad_faza_2;
+	SW4_RG3_QS3_Prad_faza_3 := ModulyDataQ[2].Prad_faza_3;
+	SW4_RG3_QS3_Open := ModulyDataQ[2].Open;
+	SW4_RG3_QS3_Closed := ModulyDataQ[2].Closed;
+	SW4_RG3_QS3_Tripped := ModulyDataQ[2].Tripped;
+	END_IF
+
+
+		END_IF
+	Actual_Step := Actual_Step +1;
+	END_IF
+
+	IF Actual_Step = 3 THEN
+	ModulType:=2;
+	ModulQ(
+	xReset:= TRUE);
+	END_IF
+
+	IF Actual_Step > Max_Steps THEN
+	Actual_Step :=0;
+	END_IF
+
+END_IF
+(*###################################################################################*)
+IF ModulType = 2 THEN
+
+	ModulFG(
+	xEn:= xEN,
+	xStart:= xStart,
+	xReset:= xReset,
+	strIP:= strIP,
+	bID:= ModulyID[Actual_Step],
+	xDone=> xDone,
+	Temp=> , 
+	pDint=> ,
+	Actual_Step=> ,
+	xReady=> ,
+	wErrorCount=> wError ,
+	b_Response_Unit_ID=>b_Response_Unit_ID ,
+	U12=> ModulyDataFG[Actual_Step].Napiecie_U1_2,
+	U13=> ModulyDataFG[Actual_Step].Napiecie_U1_3,
+	U23=> ModulyDataFG[Actual_Step].Napiecie_U2_3,
+	I1=> ModulyDataFG[Actual_Step].Prad_faza_1,
+	I2=> ModulyDataFG[Actual_Step].Prad_faza_2,
+	I3=> ModulyDataFG[Actual_Step].Prad_faza_3,
+	Pa=>ModulyDataFG[Actual_Step].moc_czynna,
+	Pq=> ModulyDataFG[Actual_Step].moc_bierna,
+	Eaplus=> ModulyDataFG[Actual_Step].energia_czynna_pobrana,
+	Eqplus=> ModulyDataFG[Actual_Step].energia_bierna_pobrana,
+	Eaminus=> ModulyDataFG[Actual_Step].energia_czynna_oddana,
+	Eqminus=> ModulyDataFG[Actual_Step].energia_bierna_oddana,
+	freq=> ModulyDataFG[Actual_Step].Czestotliwosc,
+	Open=> ModulyDataQ[Actual_Step].Open,
+	Closed=> ModulyDataQ[Actual_Step].Closed,
+	Tripped=> ModulyDataQ[Actual_Step].Tripped
+	);
+
+	xDoneTrig(CLK := xDone);
+	IF xDoneTrig.Q  THEN
+
+		IF  wError =0 AND b_Response_Unit_ID=ModulyID[Actual_Step]  THEN
+
+	ModulyDataFG[Actual_Step].Napiecie_U1_2 := ModulyDataFG[Actual_Step].Napiecie_U1_2;
+	ModulyDataFG[Actual_Step].Napiecie_U1_3 := ModulyDataFG[Actual_Step].Napiecie_U1_3;
+	ModulyDataFG[Actual_Step].Napiecie_U2_3 := ModulyDataFG[Actual_Step].Napiecie_U2_3;
+	ModulyDataFG[Actual_Step].Prad_faza_1 := ModulyDataFG[Actual_Step].Prad_faza_1;
+	ModulyDataFG[Actual_Step].Prad_faza_2 := ModulyDataFG[Actual_Step].Prad_faza_2;
+	ModulyDataFG[Actual_Step].Prad_faza_3 := ModulyDataFG[Actual_Step].Prad_faza_3;
+	ModulyDataFG[Actual_Step].moc_czynna := ModulyDataFG[Actual_Step].moc_czynna;
+	ModulyDataFG[Actual_Step].moc_bierna := ModulyDataFG[Actual_Step].moc_bierna;
+	ModulyDataFG[Actual_Step].energia_czynna_pobrana := ModulyDataFG[Actual_Step].energia_czynna_pobrana;
+	ModulyDataFG[Actual_Step].energia_bierna_pobrana := ModulyDataFG[Actual_Step].energia_bierna_pobrana;
+	ModulyDataFG[Actual_Step].energia_czynna_oddana := ModulyDataFG[Actual_Step].energia_czynna_oddana;
+	ModulyDataFG[Actual_Step].energia_bierna_oddana := ModulyDataFG[Actual_Step].energia_bierna_oddana;
+	ModulyDataFG[Actual_Step].Czestotliwosc := ModulyDataFG[Actual_Step].Czestotliwosc;
+	ModulyDataFG[Actual_Step].Open := ModulyDataFG[Actual_Step].Open;
+	ModulyDataFG[Actual_Step].Closed := ModulyDataFG[Actual_Step].Closed;
+	ModulyDataFG[Actual_Step].Tripped := ModulyDataFG[Actual_Step].Tripped;
+
+	IF Actual_Step = 3 THEN
+	SW4_RG3_FZ3_Prad_faza_1 := ModulyDataFG[3].Prad_faza_1;
+	SW4_RG3_FZ3_Prad_faza_2 := ModulyDataFG[3].Prad_faza_2;
+	SW4_RG3_FZ3_Prad_faza_3 := ModulyDataFG[3].Prad_faza_3;
+	SW4_RG3_FZ3_Napiecie_U1_2 := ModulyDataFG[3].Napiecie_U1_2;
+	SW4_RG3_FZ3_Napiecie_U1_3 := ModulyDataFG[3].Napiecie_U1_3;
+	SW4_RG3_FZ3_Napiecie_U2_3 := ModulyDataFG[3].Napiecie_U2_3;
+	SW4_RG3_FZ3_moc_czynna := ModulyDataFG[3].moc_czynna;
+	SW4_RG3_FZ3_moc_bierna := ModulyDataFG[3].moc_bierna;
+	SW4_RG3_FZ3_Czestotliwosc := ModulyDataFG[3].Czestotliwosc;
+	SW4_RG3_FZ3_energia_czynna_pobrana := ModulyDataFG[3].energia_czynna_pobrana;
+	SW4_RG3_FZ3_energia_czynna_oddana := ModulyDataFG[3].energia_czynna_oddana;
+	SW4_RG3_FZ3_energia_bierna_pobrana := ModulyDataFG[3].energia_bierna_pobrana;
+	SW4_RG3_FZ3_energia_bierna_oddana := ModulyDataFG[3].energia_bierna_oddana;
+	SW4_RG3_FZ3_Open := ModulyDataFG[3].Open;
+	SW4_RG3_FZ3_Closed := ModulyDataFG[3].Closed;
+	SW4_RG3_FZ3_Tripped := ModulyDataFG[3].Tripped;
+	END_IF
+
+	IF Actual_Step = 4 THEN
+	SW4_RG3_FZ4_Prad_faza_1 := ModulyDataFG[4].Prad_faza_1;
+	SW4_RG3_FZ4_Prad_faza_2 := ModulyDataFG[4].Prad_faza_2;
+	SW4_RG3_FZ4_Prad_faza_3 := ModulyDataFG[4].Prad_faza_3;
+	SW4_RG3_FZ4_Napiecie_U1_2 := ModulyDataFG[4].Napiecie_U1_2;
+	SW4_RG3_FZ4_Napiecie_U1_3 := ModulyDataFG[4].Napiecie_U1_3;
+	SW4_RG3_FZ4_Napiecie_U2_3 := ModulyDataFG[4].Napiecie_U2_3;
+	SW4_RG3_FZ4_moc_czynna := ModulyDataFG[4].moc_czynna;
+	SW4_RG3_FZ4_moc_bierna := ModulyDataFG[4].moc_bierna;
+	SW4_RG3_FZ4_Czestotliwosc := ModulyDataFG[4].Czestotliwosc;
+	SW4_RG3_FZ4_energia_czynna_pobrana := ModulyDataFG[4].energia_czynna_pobrana;
+	SW4_RG3_FZ4_energia_czynna_oddana := ModulyDataFG[4].energia_czynna_oddana;
+	SW4_RG3_FZ4_energia_bierna_pobrana := ModulyDataFG[4].energia_bierna_pobrana;
+	SW4_RG3_FZ4_energia_bierna_oddana := ModulyDataFG[4].energia_bierna_oddana;
+	SW4_RG3_FZ4_Open := ModulyDataFG[4].Open;
+	SW4_RG3_FZ4_Closed := ModulyDataFG[4].Closed;
+	SW4_RG3_FZ4_Tripped := ModulyDataFG[4].Tripped;
+	END_IF
+
+	IF Actual_Step = 5 THEN
+	SW4_RG3_FG1_Prad_faza_1 := ModulyDataFG[5].Prad_faza_1;
+	SW4_RG3_FG1_Prad_faza_2 := ModulyDataFG[5].Prad_faza_2;
+	SW4_RG3_FG1_Prad_faza_3 := ModulyDataFG[5].Prad_faza_3;
+	SW4_RG3_FG1_Napiecie_U1_2 := ModulyDataFG[5].Napiecie_U1_2;
+	SW4_RG3_FG1_Napiecie_U1_3 := ModulyDataFG[5].Napiecie_U1_3;
+	SW4_RG3_FG1_Napiecie_U2_3 := ModulyDataFG[5].Napiecie_U2_3;
+	SW4_RG3_FG1_moc_czynna := ModulyDataFG[5].moc_czynna;
+	SW4_RG3_FG1_moc_bierna := ModulyDataFG[5].moc_bierna;
+	SW4_RG3_FG1_Czestotliwosc := ModulyDataFG[5].Czestotliwosc;
+	SW4_RG3_FG1_energia_czynna_pobrana := ModulyDataFG[5].energia_czynna_pobrana;
+	SW4_RG3_FG1_energia_czynna_oddana := ModulyDataFG[5].energia_czynna_oddana;
+	SW4_RG3_FG1_energia_bierna_pobrana := ModulyDataFG[5].energia_bierna_pobrana;
+	SW4_RG3_FG1_energia_bierna_oddana := ModulyDataFG[5].energia_bierna_oddana;
+	SW4_RG3_FG1_Open := ModulyDataFG[5].Open;
+	SW4_RG3_FG1_Closed := ModulyDataFG[5].Closed;
+	SW4_RG3_FG1_Tripped := ModulyDataFG[5].Tripped;
+	END_IF
+
+	IF Actual_Step = 6 THEN
+	SW4_RG3_FG2_Prad_faza_1 := ModulyDataFG[6].Prad_faza_1;
+	SW4_RG3_FG2_Prad_faza_2 := ModulyDataFG[6].Prad_faza_2;
+	SW4_RG3_FG2_Prad_faza_3 := ModulyDataFG[6].Prad_faza_3;
+	SW4_RG3_FG2_Napiecie_U1_2 := ModulyDataFG[6].Napiecie_U1_2;
+	SW4_RG3_FG2_Napiecie_U1_3 := ModulyDataFG[6].Napiecie_U1_3;
+	SW4_RG3_FG2_Napiecie_U2_3 := ModulyDataFG[6].Napiecie_U2_3;
+	SW4_RG3_FG2_moc_czynna := ModulyDataFG[6].moc_czynna;
+	SW4_RG3_FG2_moc_bierna := ModulyDataFG[6].moc_bierna;
+	SW4_RG3_FG2_Czestotliwosc := ModulyDataFG[6].Czestotliwosc;
+	SW4_RG3_FG2_energia_czynna_pobrana := ModulyDataFG[6].energia_czynna_pobrana;
+	SW4_RG3_FG2_energia_czynna_oddana := ModulyDataFG[6].energia_czynna_oddana;
+	SW4_RG3_FG2_energia_bierna_pobrana := ModulyDataFG[6].energia_bierna_pobrana;
+	SW4_RG3_FG2_energia_bierna_oddana := ModulyDataFG[6].energia_bierna_oddana;
+	SW4_RG3_FG2_Open := ModulyDataFG[6].Open;
+	SW4_RG3_FG2_Closed := ModulyDataFG[6].Closed;
+	SW4_RG3_FG2_Tripped := ModulyDataFG[6].Tripped;
+	END_IF
+
+	IF Actual_Step = 7 THEN
+	SW4_RG3_FG3_Prad_faza_1 := ModulyDataFG[7].Prad_faza_1;
+	SW4_RG3_FG3_Prad_faza_2 := ModulyDataFG[7].Prad_faza_2;
+	SW4_RG3_FG3_Prad_faza_3 := ModulyDataFG[7].Prad_faza_3;
+	SW4_RG3_FG3_Napiecie_U1_2 := ModulyDataFG[7].Napiecie_U1_2;
+	SW4_RG3_FG3_Napiecie_U1_3 := ModulyDataFG[7].Napiecie_U1_3;
+	SW4_RG3_FG3_Napiecie_U2_3 := ModulyDataFG[7].Napiecie_U2_3;
+	SW4_RG3_FG3_moc_czynna := ModulyDataFG[7].moc_czynna;
+	SW4_RG3_FG3_moc_bierna := ModulyDataFG[7].moc_bierna;
+	SW4_RG3_FG3_Czestotliwosc := ModulyDataFG[7].Czestotliwosc;
+	SW4_RG3_FG3_energia_czynna_pobrana := ModulyDataFG[7].energia_czynna_pobrana;
+	SW4_RG3_FG3_energia_czynna_oddana := ModulyDataFG[7].energia_czynna_oddana;
+	SW4_RG3_FG3_energia_bierna_pobrana := ModulyDataFG[7].energia_bierna_pobrana;
+	SW4_RG3_FG3_energia_bierna_oddana := ModulyDataFG[7].energia_bierna_oddana;
+	SW4_RG3_FG3_Open := ModulyDataFG[7].Open;
+	SW4_RG3_FG3_Closed := ModulyDataFG[7].Closed;
+	SW4_RG3_FG3_Tripped := ModulyDataFG[7].Tripped;
+	END_IF
+
+	IF Actual_Step = 8 THEN
+	SW4_RG3_FG4_Prad_faza_1 := ModulyDataFG[8].Prad_faza_1;
+	SW4_RG3_FG4_Prad_faza_2 := ModulyDataFG[8].Prad_faza_2;
+	SW4_RG3_FG4_Prad_faza_3 := ModulyDataFG[8].Prad_faza_3;
+	SW4_RG3_FG4_Napiecie_U1_2 := ModulyDataFG[8].Napiecie_U1_2;
+	SW4_RG3_FG4_Napiecie_U1_3 := ModulyDataFG[8].Napiecie_U1_3;
+	SW4_RG3_FG4_Napiecie_U2_3 := ModulyDataFG[8].Napiecie_U2_3;
+	SW4_RG3_FG4_moc_czynna := ModulyDataFG[8].moc_czynna;
+	SW4_RG3_FG4_moc_bierna := ModulyDataFG[8].moc_bierna;
+	SW4_RG3_FG4_Czestotliwosc := ModulyDataFG[8].Czestotliwosc;
+	SW4_RG3_FG4_energia_czynna_pobrana := ModulyDataFG[8].energia_czynna_pobrana;
+	SW4_RG3_FG4_energia_czynna_oddana := ModulyDataFG[8].energia_czynna_oddana;
+	SW4_RG3_FG4_energia_bierna_pobrana := ModulyDataFG[8].energia_bierna_pobrana;
+	SW4_RG3_FG4_energia_bierna_oddana := ModulyDataFG[8].energia_bierna_oddana;
+	SW4_RG3_FG4_Open := ModulyDataFG[8].Open;
+	SW4_RG3_FG4_Closed := ModulyDataFG[8].Closed;
+	SW4_RG3_FG4_Tripped := ModulyDataFG[8].Tripped;
+	END_IF
+
+	IF Actual_Step = 9 THEN
+	SW4_RG3_FG5_Prad_faza_1 := ModulyDataFG[9].Prad_faza_1;
+	SW4_RG3_FG5_Prad_faza_2 := ModulyDataFG[9].Prad_faza_2;
+	SW4_RG3_FG5_Prad_faza_3 := ModulyDataFG[9].Prad_faza_3;
+	SW4_RG3_FG5_Napiecie_U1_2 := ModulyDataFG[9].Napiecie_U1_2;
+	SW4_RG3_FG5_Napiecie_U1_3 := ModulyDataFG[9].Napiecie_U1_3;
+	SW4_RG3_FG5_Napiecie_U2_3 := ModulyDataFG[9].Napiecie_U2_3;
+	SW4_RG3_FG5_moc_czynna := ModulyDataFG[9].moc_czynna;
+	SW4_RG3_FG5_moc_bierna := ModulyDataFG[9].moc_bierna;
+	SW4_RG3_FG5_Czestotliwosc := ModulyDataFG[9].Czestotliwosc;
+	SW4_RG3_FG5_energia_czynna_pobrana := ModulyDataFG[9].energia_czynna_pobrana;
+	SW4_RG3_FG5_energia_czynna_oddana := ModulyDataFG[9].energia_czynna_oddana;
+	SW4_RG3_FG5_energia_bierna_pobrana := ModulyDataFG[9].energia_bierna_pobrana;
+	SW4_RG3_FG5_energia_bierna_oddana := ModulyDataFG[9].energia_bierna_oddana;
+	SW4_RG3_FG5_Open := ModulyDataFG[9].Open;
+	SW4_RG3_FG5_Closed := ModulyDataFG[9].Closed;
+	SW4_RG3_FG5_Tripped := ModulyDataFG[9].Tripped;
+	END_IF
+
+	IF Actual_Step = 10 THEN
+	SW4_RG3_FG6_Prad_faza_1 := ModulyDataFG[10].Prad_faza_1;
+	SW4_RG3_FG6_Prad_faza_2 := ModulyDataFG[10].Prad_faza_2;
+	SW4_RG3_FG6_Prad_faza_3 := ModulyDataFG[10].Prad_faza_3;
+	SW4_RG3_FG6_Napiecie_U1_2 := ModulyDataFG[10].Napiecie_U1_2;
+	SW4_RG3_FG6_Napiecie_U1_3 := ModulyDataFG[10].Napiecie_U1_3;
+	SW4_RG3_FG6_Napiecie_U2_3 := ModulyDataFG[10].Napiecie_U2_3;
+	SW4_RG3_FG6_moc_czynna := ModulyDataFG[10].moc_czynna;
+	SW4_RG3_FG6_moc_bierna := ModulyDataFG[10].moc_bierna;
+	SW4_RG3_FG6_Czestotliwosc := ModulyDataFG[10].Czestotliwosc;
+	SW4_RG3_FG6_energia_czynna_pobrana := ModulyDataFG[10].energia_czynna_pobrana;
+	SW4_RG3_FG6_energia_czynna_oddana := ModulyDataFG[10].energia_czynna_oddana;
+	SW4_RG3_FG6_energia_bierna_pobrana := ModulyDataFG[10].energia_bierna_pobrana;
+	SW4_RG3_FG6_energia_bierna_oddana := ModulyDataFG[10].energia_bierna_oddana;
+	SW4_RG3_FG6_Open := ModulyDataFG[10].Open;
+	SW4_RG3_FG6_Closed := ModulyDataFG[10].Closed;
+	SW4_RG3_FG6_Tripped := ModulyDataFG[10].Tripped;
+	END_IF
+
+	IF Actual_Step = 11 THEN
+	SW4_RG3_FG7_Prad_faza_1 := ModulyDataFG[11].Prad_faza_1;
+	SW4_RG3_FG7_Prad_faza_2 := ModulyDataFG[11].Prad_faza_2;
+	SW4_RG3_FG7_Prad_faza_3 := ModulyDataFG[11].Prad_faza_3;
+	SW4_RG3_FG7_Napiecie_U1_2 := ModulyDataFG[11].Napiecie_U1_2;
+	SW4_RG3_FG7_Napiecie_U1_3 := ModulyDataFG[11].Napiecie_U1_3;
+	SW4_RG3_FG7_Napiecie_U2_3 := ModulyDataFG[11].Napiecie_U2_3;
+	SW4_RG3_FG7_moc_czynna := ModulyDataFG[11].moc_czynna;
+	SW4_RG3_FG7_moc_bierna := ModulyDataFG[11].moc_bierna;
+	SW4_RG3_FG7_Czestotliwosc := ModulyDataFG[11].Czestotliwosc;
+	SW4_RG3_FG7_energia_czynna_pobrana := ModulyDataFG[11].energia_czynna_pobrana;
+	SW4_RG3_FG7_energia_czynna_oddana := ModulyDataFG[11].energia_czynna_oddana;
+	SW4_RG3_FG7_energia_bierna_pobrana := ModulyDataFG[11].energia_bierna_pobrana;
+	SW4_RG3_FG7_energia_bierna_oddana := ModulyDataFG[11].energia_bierna_oddana;
+	SW4_RG3_FG7_Open := ModulyDataFG[11].Open;
+	SW4_RG3_FG7_Closed := ModulyDataFG[11].Closed;
+	SW4_RG3_FG7_Tripped := ModulyDataFG[11].Tripped;
+	END_IF
+
+	IF Actual_Step = 12 THEN
+	SW4_RG3_FG8_Prad_faza_1 := ModulyDataFG[12].Prad_faza_1;
+	SW4_RG3_FG8_Prad_faza_2 := ModulyDataFG[12].Prad_faza_2;
+	SW4_RG3_FG8_Prad_faza_3 := ModulyDataFG[12].Prad_faza_3;
+	SW4_RG3_FG8_Napiecie_U1_2 := ModulyDataFG[12].Napiecie_U1_2;
+	SW4_RG3_FG8_Napiecie_U1_3 := ModulyDataFG[12].Napiecie_U1_3;
+	SW4_RG3_FG8_Napiecie_U2_3 := ModulyDataFG[12].Napiecie_U2_3;
+	SW4_RG3_FG8_moc_czynna := ModulyDataFG[12].moc_czynna;
+	SW4_RG3_FG8_moc_bierna := ModulyDataFG[12].moc_bierna;
+	SW4_RG3_FG8_Czestotliwosc := ModulyDataFG[12].Czestotliwosc;
+	SW4_RG3_FG8_energia_czynna_pobrana := ModulyDataFG[12].energia_czynna_pobrana;
+	SW4_RG3_FG8_energia_czynna_oddana := ModulyDataFG[12].energia_czynna_oddana;
+	SW4_RG3_FG8_energia_bierna_pobrana := ModulyDataFG[12].energia_bierna_pobrana;
+	SW4_RG3_FG8_energia_bierna_oddana := ModulyDataFG[12].energia_bierna_oddana;
+	SW4_RG3_FG8_Open := ModulyDataFG[12].Open;
+	SW4_RG3_FG8_Closed := ModulyDataFG[12].Closed;
+	SW4_RG3_FG8_Tripped := ModulyDataFG[12].Tripped;
+	END_IF
+
+	IF Actual_Step = 13 THEN
+	SW4_RG3_FG9_Prad_faza_1 := ModulyDataFG[13].Prad_faza_1;
+	SW4_RG3_FG9_Prad_faza_2 := ModulyDataFG[13].Prad_faza_2;
+	SW4_RG3_FG9_Prad_faza_3 := ModulyDataFG[13].Prad_faza_3;
+	SW4_RG3_FG9_Napiecie_U1_2 := ModulyDataFG[13].Napiecie_U1_2;
+	SW4_RG3_FG9_Napiecie_U1_3 := ModulyDataFG[13].Napiecie_U1_3;
+	SW4_RG3_FG9_Napiecie_U2_3 := ModulyDataFG[13].Napiecie_U2_3;
+	SW4_RG3_FG9_moc_czynna := ModulyDataFG[13].moc_czynna;
+	SW4_RG3_FG9_moc_bierna := ModulyDataFG[13].moc_bierna;
+	SW4_RG3_FG9_Czestotliwosc := ModulyDataFG[13].Czestotliwosc;
+	SW4_RG3_FG9_energia_czynna_pobrana := ModulyDataFG[13].energia_czynna_pobrana;
+	SW4_RG3_FG9_energia_czynna_oddana := ModulyDataFG[13].energia_czynna_oddana;
+	SW4_RG3_FG9_energia_bierna_pobrana := ModulyDataFG[13].energia_bierna_pobrana;
+	SW4_RG3_FG9_energia_bierna_oddana := ModulyDataFG[13].energia_bierna_oddana;
+	SW4_RG3_FG9_Open := ModulyDataFG[13].Open;
+	SW4_RG3_FG9_Closed := ModulyDataFG[13].Closed;
+	SW4_RG3_FG9_Tripped := ModulyDataFG[13].Tripped;
+	END_IF
+
+	IF Actual_Step = 14 THEN
+	SW4_RG3_FG10_Prad_faza_1 := ModulyDataFG[14].Prad_faza_1;
+	SW4_RG3_FG10_Prad_faza_2 := ModulyDataFG[14].Prad_faza_2;
+	SW4_RG3_FG10_Prad_faza_3 := ModulyDataFG[14].Prad_faza_3;
+	SW4_RG3_FG10_Napiecie_U1_2 := ModulyDataFG[14].Napiecie_U1_2;
+	SW4_RG3_FG10_Napiecie_U1_3 := ModulyDataFG[14].Napiecie_U1_3;
+	SW4_RG3_FG10_Napiecie_U2_3 := ModulyDataFG[14].Napiecie_U2_3;
+	SW4_RG3_FG10_moc_czynna := ModulyDataFG[14].moc_czynna;
+	SW4_RG3_FG10_moc_bierna := ModulyDataFG[14].moc_bierna;
+	SW4_RG3_FG10_Czestotliwosc := ModulyDataFG[14].Czestotliwosc;
+	SW4_RG3_FG10_energia_czynna_pobrana := ModulyDataFG[14].energia_czynna_pobrana;
+	SW4_RG3_FG10_energia_czynna_oddana := ModulyDataFG[14].energia_czynna_oddana;
+	SW4_RG3_FG10_energia_bierna_pobrana := ModulyDataFG[14].energia_bierna_pobrana;
+	SW4_RG3_FG10_energia_bierna_oddana := ModulyDataFG[14].energia_bierna_oddana;
+	SW4_RG3_FG10_Open := ModulyDataFG[14].Open;
+	SW4_RG3_FG10_Closed := ModulyDataFG[14].Closed;
+	SW4_RG3_FG10_Tripped := ModulyDataFG[14].Tripped;
+	END_IF
+
+	IF Actual_Step = 15 THEN
+	SW4_RG3_FG11_Prad_faza_1 := ModulyDataFG[15].Prad_faza_1;
+	SW4_RG3_FG11_Prad_faza_2 := ModulyDataFG[15].Prad_faza_2;
+	SW4_RG3_FG11_Prad_faza_3 := ModulyDataFG[15].Prad_faza_3;
+	SW4_RG3_FG11_Napiecie_U1_2 := ModulyDataFG[15].Napiecie_U1_2;
+	SW4_RG3_FG11_Napiecie_U1_3 := ModulyDataFG[15].Napiecie_U1_3;
+	SW4_RG3_FG11_Napiecie_U2_3 := ModulyDataFG[15].Napiecie_U2_3;
+	SW4_RG3_FG11_moc_czynna := ModulyDataFG[15].moc_czynna;
+	SW4_RG3_FG11_moc_bierna := ModulyDataFG[15].moc_bierna;
+	SW4_RG3_FG11_Czestotliwosc := ModulyDataFG[15].Czestotliwosc;
+	SW4_RG3_FG11_energia_czynna_pobrana := ModulyDataFG[15].energia_czynna_pobrana;
+	SW4_RG3_FG11_energia_czynna_oddana := ModulyDataFG[15].energia_czynna_oddana;
+	SW4_RG3_FG11_energia_bierna_pobrana := ModulyDataFG[15].energia_bierna_pobrana;
+	SW4_RG3_FG11_energia_bierna_oddana := ModulyDataFG[15].energia_bierna_oddana;
+	SW4_RG3_FG11_Open := ModulyDataFG[15].Open;
+	SW4_RG3_FG11_Closed := ModulyDataFG[15].Closed;
+	SW4_RG3_FG11_Tripped := ModulyDataFG[15].Tripped;
+	END_IF
+
+	IF Actual_Step = 16 THEN
+	SW4_RG3_FG12_Prad_faza_1 := ModulyDataFG[16].Prad_faza_1;
+	SW4_RG3_FG12_Prad_faza_2 := ModulyDataFG[16].Prad_faza_2;
+	SW4_RG3_FG12_Prad_faza_3 := ModulyDataFG[16].Prad_faza_3;
+	SW4_RG3_FG12_Napiecie_U1_2 := ModulyDataFG[16].Napiecie_U1_2;
+	SW4_RG3_FG12_Napiecie_U1_3 := ModulyDataFG[16].Napiecie_U1_3;
+	SW4_RG3_FG12_Napiecie_U2_3 := ModulyDataFG[16].Napiecie_U2_3;
+	SW4_RG3_FG12_moc_czynna := ModulyDataFG[16].moc_czynna;
+	SW4_RG3_FG12_moc_bierna := ModulyDataFG[16].moc_bierna;
+	SW4_RG3_FG12_Czestotliwosc := ModulyDataFG[16].Czestotliwosc;
+	SW4_RG3_FG12_energia_czynna_pobrana := ModulyDataFG[16].energia_czynna_pobrana;
+	SW4_RG3_FG12_energia_czynna_oddana := ModulyDataFG[16].energia_czynna_oddana;
+	SW4_RG3_FG12_energia_bierna_pobrana := ModulyDataFG[16].energia_bierna_pobrana;
+	SW4_RG3_FG12_energia_bierna_oddana := ModulyDataFG[16].energia_bierna_oddana;
+	SW4_RG3_FG12_Open := ModulyDataFG[16].Open;
+	SW4_RG3_FG12_Closed := ModulyDataFG[16].Closed;
+	SW4_RG3_FG12_Tripped := ModulyDataFG[16].Tripped;
+	END_IF
+
+
+		END_IF
+	Actual_Step := Actual_Step +1;
+	END_IF
+
+	IF Actual_Step = 17 THEN
+	ModulType:=1;
+	ModulFG(
+	xReset:= TRUE);
+	END_IF
+
+
+	IF Actual_Step > Max_Steps THEN
+	Actual_Step :=0;
+	END_IF
+
+END_IF
+END_FUNCTION_BLOCK
