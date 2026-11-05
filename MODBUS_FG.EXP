@@ -53,7 +53,7 @@ VAR
 	timeout : TON;
 	timeoutTime: TIME:= T#2s;
 	delay:TON;
-	delayTime:TIME:=T#200ms;
+	delayTime:TIME:=T#100ms;
 	timeoutEnd:BOOL;
 
 END_VAR
@@ -67,12 +67,14 @@ IF NOT xEn THEN
 	);
 RETURN;
 END_IF
+timeout.PT:= timeoutTime;
+delay.PT:=delayTime;
+
 timeout();
 delay();
 
 xReadyTrig(CLK := xReady);
-timeout.PT:= timeoutTime;
-delay.PT:=delayTime;;
+
 IF timeout.Q THEN
 	Actual_Step:= Max_Steps;
 	wErrorCount := wErrorCount + 1;
@@ -101,30 +103,28 @@ CASE Actual_Step OF
 	wREAD_ADDRESS:= 20497;
 	wREAD_QUANTITY:= 3;
 	xStart:= TRUE;
-	IF NOT timeout.IN THEN timeout.IN := TRUE;
+	IF NOT timeout.IN AND NOT delay.IN THEN timeout.IN := TRUE;
 		END_IF
 
-
-
-	IF xReadyTrig.Q  AND wError = 0 AND bID=b_Response_Unit_ID AND Temp[0] < 32768 THEN
-	U12 := Temp[0];
-	U13 := Temp[1];
-	U23 := Temp[2];
-	delay.IN:= TRUE;
+	IF xReadyTrig.Q THEN
+		delay.IN:= TRUE;
+		xStart:= FALSE;
+		xReady:= FALSE;
+		timeout.IN:=FALSE;
+			IF wError >0 OR bID<>b_Response_Unit_ID THEN
+				wErrorCount := wErrorCount + 1;
+				Actual_Step:= Max_Steps;
+			END_IF
+			IF wError = 0 AND bID=b_Response_Unit_ID THEN
+				U12 := Temp[0];
+				U13 := Temp[1];
+				U23 := Temp[2];
+			END_IF
 	END_IF
 
-	IF xReadyTrig.Q AND delay.Q THEN
+	IF delay.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	xStart:= FALSE;
-	xReady:= FALSE;
-	timeout.IN:=FALSE;
 	delay.IN:= FALSE;
-
-
-		IF wError >0 THEN
-		wErrorCount := wErrorCount + 1;
-		Actual_Step:= Max_Steps;
-		END_IF
 	END_IF
 
 2:	(* I1, I2, I3 *)
@@ -133,28 +133,28 @@ CASE Actual_Step OF
 	wREAD_ADDRESS:= 20480;
 	wREAD_QUANTITY:= 3;
 	xStart:= TRUE;
-	timeout.IN:= TRUE;
+	IF NOT timeout.IN AND NOT delay.IN THEN timeout.IN := TRUE;
+		END_IF
 
-
-	IF xReadyTrig.Q AND wError = 0 AND bID=b_Response_Unit_ID  AND Temp[0] < 32768 THEN
-	I1 := Temp[0];
-	I2 := Temp[1];
-	I3 := Temp[2];
-	delay.IN:= TRUE;
+	IF xReadyTrig.Q THEN
+		delay.IN:= TRUE;
+		xStart:= FALSE;
+		xReady:= FALSE;
+		timeout.IN:=FALSE;
+			IF wError >0 OR bID<>b_Response_Unit_ID THEN
+				wErrorCount := wErrorCount + 1;
+				Actual_Step:= Max_Steps;
+			END_IF
+			IF wError = 0 AND bID=b_Response_Unit_ID THEN
+				I1 := Temp[0];
+				I2 := Temp[1];
+				I3 := Temp[2];
+			END_IF
 	END_IF
 
-	IF xReadyTrig.Q AND delay.Q THEN
+	IF delay.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	xStart:= FALSE;
-	xReady:= FALSE;
-	timeout.IN:=FALSE;
 	delay.IN:= FALSE;
-
-
-		IF wError >0 THEN
-		wErrorCount := wErrorCount + 1;
-		Actual_Step:= Max_Steps;
-		END_IF
 	END_IF
 
 3:	(* Pa, Pq *)
@@ -163,27 +163,29 @@ CASE Actual_Step OF
 	wREAD_ADDRESS:= 20522;
 	wREAD_QUANTITY:= 2;
 	xStart:= TRUE;
-	timeout.IN:= TRUE;
-	
+	IF NOT timeout.IN AND NOT delay.IN THEN timeout.IN := TRUE;
+		END_IF
 
-	IF xReadyTrig.Q  AND wError = 0 AND bID=b_Response_Unit_ID AND Temp[0] < 32768 THEN
-	Pa := Temp[0];
-	Pq := Temp[1];
-	delay.IN:= TRUE;
+	IF xReadyTrig.Q THEN
+		delay.IN:= TRUE;
+		xStart:= FALSE;
+		xReady:= FALSE;
+		timeout.IN:=FALSE;
+			IF wError >0 OR bID<>b_Response_Unit_ID THEN
+				wErrorCount := wErrorCount + 1;
+				Actual_Step:= Max_Steps;
+			END_IF
+			IF wError = 0 AND bID=b_Response_Unit_ID THEN
+				Pa := Temp[0];
+				Pq := Temp[1];
+			END_IF
+
+
 	END_IF
 
-	IF xReadyTrig.Q AND delay.Q THEN
+	IF delay.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	xStart:= FALSE;
-	xReady:= FALSE;
-	timeout.IN:=FALSE;
 	delay.IN:= FALSE;
-
-
-		IF wError >0 THEN
-		wErrorCount := wErrorCount + 1;
-		Actual_Step:= Max_Steps;
-		END_IF
 	END_IF
 
 4:	(* Ea, Eq *)
@@ -192,29 +194,31 @@ CASE Actual_Step OF
 	wREAD_ADDRESS:= 20532;
 	wREAD_QUANTITY:= 10;
 	xStart:= TRUE;
-	timeout.IN:= TRUE;
-	
+	IF NOT timeout.IN AND NOT delay.IN THEN timeout.IN := TRUE;
+		END_IF
 
-	IF xReadyTrig.Q  AND wError = 0 AND bID=b_Response_Unit_ID AND Temp[0] < 32768 THEN
-	Eaplus := UDINT_swap(ADR(Temp[0]));
-	Eaminus := UDINT_swap(ADR(Temp[2]));
-	Eqplus := UDINT_swap(ADR(Temp[6]));
-	Eqminus := UDINT_swap(ADR(Temp[8]));
-	delay.IN:= TRUE;
+	IF xReadyTrig.Q THEN
+		delay.IN:= TRUE;
+		xStart:= FALSE;
+		xReady:= FALSE;
+		timeout.IN:=FALSE;
+			IF wError >0 OR bID<>b_Response_Unit_ID THEN
+				wErrorCount := wErrorCount + 1;
+				Actual_Step:= Max_Steps;
+			END_IF
+			IF wError = 0 AND bID=b_Response_Unit_ID THEN
+				Eaplus := UDINT_swap(ADR(Temp[0]));
+				Eaminus := UDINT_swap(ADR(Temp[2]));
+				Eqplus := UDINT_swap(ADR(Temp[6]));
+				Eqminus := UDINT_swap(ADR(Temp[8]));
+			END_IF
+
+
 	END_IF
 
-	IF xReadyTrig.Q AND delay.Q THEN
+	IF delay.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	xStart:= FALSE;
-	xReady:= FALSE;
-	timeout.IN:=FALSE;
 	delay.IN:= FALSE;
-
-
-		IF wError >0 THEN
-		wErrorCount := wErrorCount + 1;
-		Actual_Step:= Max_Steps;
-		END_IF
 	END_IF
 
 5:	(* frequency *)
@@ -223,26 +227,28 @@ CASE Actual_Step OF
 	wREAD_ADDRESS:= 20529;
 	wREAD_QUANTITY:= 1;
 	xStart:= TRUE;
-	timeout.IN:= TRUE;
-	
+	IF NOT timeout.IN AND NOT delay.IN THEN timeout.IN := TRUE;
+		END_IF
 
-	IF xReadyTrig.Q  AND wError = 0 AND bID=b_Response_Unit_ID AND Temp[0] < 32768 THEN
-	freq:= Temp[0];
-	delay.IN:= TRUE;
+	IF xReadyTrig.Q THEN
+		delay.IN:= TRUE;
+		xStart:= FALSE;
+		xReady:= FALSE;
+		timeout.IN:=FALSE;
+			IF wError >0 OR bID<>b_Response_Unit_ID THEN
+				wErrorCount := wErrorCount + 1;
+				Actual_Step:= Max_Steps;
+			END_IF
+			IF wError = 0 AND bID=b_Response_Unit_ID THEN
+				freq:= Temp[0];
+			END_IF
+
+
 	END_IF
 
-	IF xReadyTrig.Q AND delay.Q THEN
+	IF delay.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	xStart:= FALSE;
-	xReady:= FALSE;
-	timeout.IN:=FALSE;
 	delay.IN:= FALSE;
-
-
-		IF wError >0 THEN
-		wErrorCount := wErrorCount + 1;
-		Actual_Step:= Max_Steps;
-		END_IF
 	END_IF
 
 6:	(* i1, i2, i3 *)
@@ -251,33 +257,30 @@ CASE Actual_Step OF
 	wREAD_ADDRESS:= 16384;
 	wREAD_QUANTITY:= 3;
 	xStart:= TRUE;
-	timeout.IN:= TRUE;
-	
+	IF NOT timeout.IN AND NOT delay.IN THEN timeout.IN := TRUE;
+		END_IF
 
-	IF xReadyTrig.Q  AND wError = 0 AND bID=b_Response_Unit_ID THEN
-(*	I1 := UDINT_swap(ADR(Temp[0]));
-	I2 := UDINT_swap(ADR(Temp[2]));
-	I3 := UDINT_swap(ADR(Temp[4]));*)
-	Open := Temp[0].0;
-	Closed := Temp[0].1;
-	Tripped := Temp[0].2;
-	delay.IN:= TRUE;
+	IF xReadyTrig.Q THEN
+		delay.IN:= TRUE;
+		xStart:= FALSE;
+		xReady:= FALSE;
+		timeout.IN:=FALSE;
+			IF wError >0 OR bID<>b_Response_Unit_ID THEN
+				wErrorCount := wErrorCount + 1;
+				Actual_Step:= Max_Steps;
+			END_IF
+			IF wError = 0 AND bID=b_Response_Unit_ID THEN
+				Open := Temp[0].0;
+				Closed := Temp[0].1;
+				Tripped := Temp[0].2;
+			END_IF
+
+
 	END_IF
 
-
-
-	IF xReadyTrig.Q AND delay.Q THEN
+	IF delay.Q THEN
 	Actual_Step := Next_step(Actual_Step, Max_Steps);
-	xStart:= FALSE;
-	xReady:= FALSE;
-	timeout.IN:=FALSE;
 	delay.IN:= FALSE;
-
-
-		IF wError >0 THEN
-		wErrorCount := wErrorCount + 1;
-		Actual_Step:= Max_Steps;
-		END_IF
 	END_IF
 
 7:
