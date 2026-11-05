@@ -1,0 +1,24 @@
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+TYPE Modbus_data_FG :
+STRUCT
+	Napiecie_U1_2: REAL;   (*Napiecie miedzyfazowe  [V]*)
+	Napiecie_U1_3: REAL;   (*Napiecie miedzyfazowe  [V]*)
+	Napiecie_U2_3: REAL;   (*Napiecie miedzyfazowe  [V]*)
+	Prad_faza_1: REAL;   (*Prad fazowy [A]*)
+	Prad_faza_2: REAL;   (*Prad fazowy [A]*)
+	Prad_faza_3: REAL;   (*Prad fazowy [A]*)
+	moc_czynna: REAL;   (*Moc czynna  [kW]*)
+	moc_bierna: REAL;   (*Moc bierna  [kvar]*)
+	energia_czynna_pobrana: REAL;   (*Energia czynna  [kWh]*)
+	energia_bierna_pobrana: REAL;   (*Energia bierna  [kvarh]*)
+	energia_czynna_oddana: REAL;   (*Energia czynna  [kWh]*)
+	energia_bierna_oddana: REAL;   (*Energia bierna  [kvarh]*)
+	Czestotliwosc: REAL;   (*Czestotliwosc  [Hz]*)
+	Open:BOOL;
+	Closed:BOOL;
+	Tripped:BOOL;
+END_STRUCT
+END_TYPE
+(* @END_DECLARATION := '0' *)
